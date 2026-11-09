@@ -1,0 +1,793 @@
+<!DOCTYPE html>
+<html lang="id" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Minimalist Markdown Studio</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Marked.js CDN for Markdown Parsing -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <!-- Highlight.js for Syntax Highlighting in Code Blocks -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css" id="hljs-theme">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+    <!-- Inter Font -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        mono: ['Fira Code', 'monospace'],
+                    },
+                    colors: {
+                        brand: {
+                            50: '#f0f7ff',
+                            100: '#e0effe',
+                            500: '#0284c7',
+                            600: '#0284c7',
+                            700: '#0369a1',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        /* Custom Scrollbars */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(156, 163, 175, 0.4);
+            border-radius: 9999px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(156, 163, 175, 0.6);
+        }
+
+        /* Typography Styles for Live Preview (Markdown Rendered Content) */
+        .markdown-body {
+            font-family: 'Inter', sans-serif;
+            line-height: 1.7;
+            color: inherit;
+        }
+        .markdown-body h1 {
+            font-size: 2.1em;
+            font-weight: 700;
+            padding-bottom: 0.3em;
+            border-bottom: 1px solid rgba(156, 163, 175, 0.25);
+            margin-top: 1.2em;
+            margin-bottom: 0.6em;
+            letter-spacing: -0.025em;
+        }
+        .markdown-body h2 {
+            font-size: 1.6em;
+            font-weight: 600;
+            padding-bottom: 0.2em;
+            border-bottom: 1px solid rgba(156, 163, 175, 0.15);
+            margin-top: 1.2em;
+            margin-bottom: 0.5em;
+            letter-spacing: -0.02em;
+        }
+        .markdown-body h3 {
+            font-size: 1.3em;
+            font-weight: 600;
+            margin-top: 1em;
+            margin-bottom: 0.4em;
+        }
+        .markdown-body h4, .markdown-body h5, .markdown-body h6 {
+            font-weight: 600;
+            margin-top: 0.8em;
+            margin-bottom: 0.4em;
+        }
+        .markdown-body p {
+            margin-bottom: 1em;
+        }
+        .markdown-body a {
+            color: #0284c7;
+            text-decoration: underline;
+            text-underline-offset: 3px;
+            transition: color 0.15s;
+        }
+        .markdown-body a:hover {
+            color: #0369a1;
+        }
+        .markdown-body ul {
+            list-style-type: disc;
+            padding-left: 1.5em;
+            margin-bottom: 1em;
+        }
+        .markdown-body ol {
+            list-style-type: decimal;
+            padding-left: 1.5em;
+            margin-bottom: 1em;
+        }
+        .markdown-body li {
+            margin-bottom: 0.3em;
+        }
+        .markdown-body blockquote {
+            border-left: 4px solid #0284c7;
+            padding-left: 1em;
+            margin: 1em 0;
+            font-style: italic;
+            opacity: 0.9;
+        }
+        .markdown-body code:not(pre code) {
+            font-family: 'Fira Code', monospace;
+            background: rgba(156, 163, 175, 0.15);
+            padding: 0.2em 0.4em;
+            border-radius: 4px;
+            font-size: 0.88em;
+        }
+        .markdown-body pre {
+            background: #0d1117;
+            border-radius: 8px;
+            padding: 1em;
+            overflow-x: auto;
+            margin: 1.2em 0;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+        .light .markdown-body pre {
+            background: #f6f8fa;
+            border: 1px solid rgba(0, 0, 0, 0.08);
+        }
+        .markdown-body pre code {
+            font-family: 'Fira Code', monospace;
+            font-size: 0.9em;
+            line-height: 1.5;
+            background: transparent;
+            padding: 0;
+        }
+        .markdown-body table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 1em 0;
+        }
+        .markdown-body th, .markdown-body td {
+            border: 1px solid rgba(156, 163, 175, 0.3);
+            padding: 0.6em 1em;
+            text-align: left;
+        }
+        .markdown-body th {
+            font-weight: 600;
+            background: rgba(156, 163, 175, 0.1);
+        }
+        .markdown-body hr {
+            height: 1px;
+            border: none;
+            background-color: rgba(156, 163, 175, 0.3);
+            margin: 1.5em 0;
+        }
+        .markdown-body input[type="checkbox"] {
+            margin-right: 0.5em;
+            accent-color: #0284c7;
+        }
+        
+        /* Line Counter Alignment */
+        #line-numbers {
+            font-family: 'Fira Code', monospace;
+            user-select: none;
+            text-align: right;
+            padding-right: 0.75rem;
+            opacity: 0.4;
+        }
+    </style>
+</head>
+<body class="bg-slate-900 text-slate-100 min-h-screen flex flex-col font-sans transition-colors duration-200 antialiased overflow-hidden">
+
+    <!-- Toast Notification System -->
+    <div id="toast" class="fixed bottom-6 right-6 z-50 transform translate-y-20 opacity-0 transition-all duration-300 pointer-events-none bg-slate-800 border border-slate-700 text-slate-100 px-4 py-3 rounded-lg shadow-2xl flex items-center gap-3 text-sm font-medium">
+        <svg class="w-5 h-5 text-emerald-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+        <span id="toast-message">Notifikasi</span>
+    </div>
+
+    <!-- Header Navigation & Status Bar -->
+    <header id="main-header" class="h-14 border-b border-slate-800 bg-slate-900/90 backdrop-blur shrink-0 flex items-center justify-between px-4 z-20 transition-all duration-300">
+        <!-- Left: Logo & File Title -->
+        <div class="flex items-center gap-3">
+            <div class="p-1.5 bg-brand-600 rounded-lg text-white shadow-md shadow-brand-500/20">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
+            </div>
+            <input type="text" id="doc-title" value="Dokumen-Tanpa-Judul.md" class="bg-transparent font-medium text-slate-200 hover:bg-slate-800/60 focus:bg-slate-800 px-2 py-1 rounded text-sm outline-none transition border border-transparent focus:border-slate-700 w-44 sm:w-64 truncate">
+            <span id="autosave-status" class="hidden sm:inline-flex text-[11px] font-medium text-slate-400 bg-slate-800 px-2 py-0.5 rounded-full items-center gap-1">
+                <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> Tersimpan
+            </span>
+        </div>
+
+        <!-- Right: Actions & Controls -->
+        <div class="flex items-center gap-1 sm:gap-2">
+            <!-- Analytics Summary -->
+            <div class="hidden md:flex items-center gap-4 text-xs text-slate-400 mr-2 border-r border-slate-800 pr-4">
+                <span><strong id="word-count" class="text-slate-200 font-semibold">0</strong> Kata</span>
+                <span><strong id="char-count" class="text-slate-200 font-semibold">0</strong> Karakter</span>
+                <span><strong id="read-time" class="text-slate-200 font-semibold">0 min</strong> Baca</span>
+            </div>
+
+            <!-- Focus Mode Button -->
+            <button id="btn-focus" title="Mode Fokus / Layar Penuh" class="p-2 text-slate-400 hover:text-slate-100 hover:bg-slate-800 rounded-lg transition">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"></path></svg>
+            </button>
+
+            <!-- Theme Switcher -->
+            <button id="btn-theme" title="Ganti Tema" class="p-2 text-slate-400 hover:text-slate-100 hover:bg-slate-800 rounded-lg transition">
+                <!-- Moon icon (Dark mode default) -->
+                <svg id="icon-moon" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path></svg>
+                <!-- Sun icon -->
+                <svg id="icon-sun" class="w-4 h-4 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
+            </button>
+
+            <!-- Copy Options Menu -->
+            <div class="relative group">
+                <button class="p-2 text-slate-400 hover:text-slate-100 hover:bg-slate-800 rounded-lg transition flex items-center gap-1">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
+                    <svg class="w-3 h-3 opacity-60" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                </button>
+                <div class="absolute right-0 mt-1 w-48 bg-slate-800 border border-slate-700 rounded-xl shadow-xl py-1 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-150 z-30">
+                    <button id="btn-copy-md" class="w-full px-4 py-2 text-left text-xs text-slate-300 hover:bg-slate-700 hover:text-white flex items-center gap-2">
+                        <span>Salin Markdown Raw</span>
+                    </button>
+                    <button id="btn-copy-html" class="w-full px-4 py-2 text-left text-xs text-slate-300 hover:bg-slate-700 hover:text-white flex items-center gap-2">
+                        <span>Salin Hasil HTML</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Export Menu Button -->
+            <div class="relative group">
+                <button class="bg-brand-600 hover:bg-brand-500 text-white px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 shadow-sm transition">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                    <span>Unduh</span>
+                    <svg class="w-3 h-3 opacity-80" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                </button>
+                <div class="absolute right-0 mt-1 w-48 bg-slate-800 border border-slate-700 rounded-xl shadow-xl py-1 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-150 z-30">
+                    <button id="btn-export-md" class="w-full px-4 py-2 text-left text-xs text-slate-300 hover:bg-slate-700 hover:text-white flex items-center gap-2">
+                        <svg class="w-4 h-4 text-brand-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                        <span>File Markdown (.md)</span>
+                    </button>
+                    <button id="btn-export-html" class="w-full px-4 py-2 text-left text-xs text-slate-300 hover:bg-slate-700 hover:text-white flex items-center gap-2">
+                        <svg class="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"></path></svg>
+                        <span>File HTML (.html)</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Quick Action Formatting Toolbar -->
+    <div id="formatting-toolbar" class="bg-slate-900 border-b border-slate-800 px-4 py-1.5 flex items-center gap-1 overflow-x-auto text-slate-400 text-xs shrink-0 z-10">
+        <button data-format="bold" title="Cetak Tebal (Ctrl+B)" class="p-1.5 hover:bg-slate-800 hover:text-slate-100 rounded transition font-bold">B</button>
+        <button data-format="italic" title="Cetak Miring (Ctrl+I)" class="p-1.5 hover:bg-slate-800 hover:text-slate-100 rounded transition italic font-serif">I</button>
+        <button data-format="strikethrough" title="Coretan" class="p-1.5 hover:bg-slate-800 hover:text-slate-100 rounded transition line-through">S</button>
+        <div class="h-4 w-px bg-slate-800 mx-1"></div>
+        <button data-format="h1" title="Judul 1" class="p-1.5 hover:bg-slate-800 hover:text-slate-100 rounded transition font-semibold">H1</button>
+        <button data-format="h2" title="Judul 2" class="p-1.5 hover:bg-slate-800 hover:text-slate-100 rounded transition font-semibold">H2</button>
+        <button data-format="h3" title="Judul 3" class="p-1.5 hover:bg-slate-800 hover:text-slate-100 rounded transition font-semibold">H3</button>
+        <div class="h-4 w-px bg-slate-800 mx-1"></div>
+        <button data-format="ul" title="Daftar Poin" class="p-1.5 hover:bg-slate-800 hover:text-slate-100 rounded transition">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
+        </button>
+        <button data-format="ol" title="Daftar Angka" class="p-1.5 hover:bg-slate-800 hover:text-slate-100 rounded transition">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 8h13M7 12h13M7 16h13M3 8h.01M3 12h.01M3 16h.01"></path></svg>
+        </button>
+        <button data-format="task" title="Daftar Tugas" class="p-1.5 hover:bg-slate-800 hover:text-slate-100 rounded transition">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+        </button>
+        <div class="h-4 w-px bg-slate-800 mx-1"></div>
+        <button data-format="quote" title="Kutipan" class="p-1.5 hover:bg-slate-800 hover:text-slate-100 rounded transition">
+            <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M14.017 21v-7.391c0-5.704 3.731-9.57 8.983-10.609l.995 2.151c-2.432.917-3.995 3.638-3.995 5.849h4v10h-9.983zm-14.017 0v-7.391c0-5.704 3.748-9.57 9-10.609l.996 2.151c-2.433.917-3.996 3.638-3.996 5.849h3.983v10h-9.983z"/></svg>
+        </button>
+        <button data-format="code" title="Kode Blok" class="p-1.5 hover:bg-slate-800 hover:text-slate-100 rounded transition font-mono">
+            &lt;/&gt;
+        </button>
+        <button data-format="link" title="Tautan Web" class="p-1.5 hover:bg-slate-800 hover:text-slate-100 rounded transition">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"></path></svg>
+        </button>
+        <button data-format="table" title="Tabel" class="p-1.5 hover:bg-slate-800 hover:text-slate-100 rounded transition">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M3 14h18m-9-4v8m-7 0h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+        </button>
+        <button data-format="hr" title="Garis Pemisah" class="p-1.5 hover:bg-slate-800 hover:text-slate-100 rounded transition">—</button>
+
+        <div class="ml-auto flex items-center gap-2">
+            <!-- View Mode Selector (Split, Editor Only, Preview Only) -->
+            <div class="flex items-center bg-slate-800 rounded-lg p-0.5 border border-slate-700/50">
+                <button id="view-split" title="Mode Split View" class="px-2 py-0.5 rounded text-[11px] font-medium bg-brand-600 text-white transition">Split</button>
+                <button id="view-editor" title="Hanya Editor" class="px-2 py-0.5 rounded text-[11px] font-medium text-slate-400 hover:text-slate-200 transition">Editor</button>
+                <button id="view-preview" title="Hanya Preview" class="px-2 py-0.5 rounded text-[11px] font-medium text-slate-400 hover:text-slate-200 transition">Preview</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Workspace Container -->
+    <main class="flex-1 flex overflow-hidden relative">
+        
+        <!-- EDITOR PANEL -->
+        <section id="panel-editor" class="w-1/2 flex flex-col border-r border-slate-800 relative bg-slate-900/50 transition-all duration-200">
+            <!-- Panel Header -->
+            <div class="h-8 bg-slate-900/80 px-4 border-b border-slate-800/80 flex items-center justify-between text-xs text-slate-400 select-none">
+                <span class="font-medium tracking-wide uppercase text-[10px] text-slate-500">MARKDOWN INPUT</span>
+                <span class="font-mono text-[10px]">UTF-8</span>
+            </div>
+
+            <!-- Textarea Wrapper with Line Numbers -->
+            <div class="flex-1 flex overflow-hidden relative font-mono text-sm">
+                <!-- Line Numbers Column -->
+                <div id="line-numbers" class="w-12 py-4 bg-slate-900/30 text-slate-600 select-none border-r border-slate-800/40 text-xs overflow-hidden leading-relaxed shrink-0">
+                    1
+                </div>
+
+                <!-- Main Textarea -->
+                <textarea id="markdown-input" spellcheck="false" placeholder="Ketik atau tempel kode Markdown Anda di sini..." class="w-full h-full p-4 bg-transparent text-slate-200 outline-none resize-none leading-relaxed font-mono selection:bg-brand-500/30 border-none focus:ring-0 overflow-y-auto"></textarea>
+            </div>
+        </section>
+
+        <!-- LIVE PREVIEW PANEL -->
+        <section id="panel-preview" class="w-1/2 flex flex-col bg-slate-900 transition-all duration-200">
+            <!-- Panel Header -->
+            <div class="h-8 bg-slate-900/80 px-4 border-b border-slate-800/80 flex items-center justify-between text-xs text-slate-400 select-none">
+                <span class="font-medium tracking-wide uppercase text-[10px] text-slate-500">LIVE PREVIEW</span>
+                <span class="text-[10px] bg-slate-800 px-1.5 py-0.5 rounded text-emerald-400 font-medium">REAL-TIME</span>
+            </div>
+
+            <!-- Formatted Output Canvas -->
+            <div id="preview-container" class="flex-1 p-6 md:p-8 overflow-y-auto selection:bg-brand-500/30">
+                <div id="markdown-preview" class="markdown-body max-w-3xl mx-auto"></div>
+            </div>
+        </section>
+    </main>
+
+    <!-- App Logic Script -->
+    <script>
+        // Initial Sample Content
+        const SAMPLE_MARKDOWN = `# Selamat Datang di Minimalist Markdown Studio 🚀
+
+Editor Markdown ultra-clean dengan fitur lengkap untuk membantu Anda menulis dokumentasi, catatan, atau artikel tanpa gangguan.
+
+---
+
+## 🌟 Fitur Utama
+- **Real-time Live Preview** dengan dukungan sintaksis lengkap.
+- **Auto-save otomatis** tersimpan di browser Anda (`localStorage`).
+- **Pewarnaan Kode Sintaksis** yang indah menggunakan *Highlight.js*.
+- Mode **Focus Mode** & Pilihan **Tema Gelap / Terang**.
+- Ekspor ke format **.md** dan **.html** sekali klik.
+
+---
+
+## 📝 Contoh Sintaksis Markdown
+
+### 1. Daftar Tugas (Checklist)
+- [x] Merancang antarmuka yang bersih & responsif
+- [x] Mengintegrasikan parser Markdown super cepat
+- [ ] Menulis artikel hebat berikutnya
+
+### 2. Kode Program & Highlighting
+\`\`\`javascript
+// Contoh fungsi kalkulasi matematika sederhana
+function hitungTotal(harga, jumlah) {
+    const pajak = 0.1;
+    const subtotal = harga * jumlah;
+    return subtotal + (subtotal * pajak);
+}
+
+console.log("Total Pembayaran:", hitungTotal(50000, 2));
+\`\`\`
+
+### 3. Kutipan (Blockquote)
+> "Kesederhanaan adalah syarat utama untuk keandalan suatu desain."
+> — *Edgar W. Dijkstra*
+
+### 4. Tabel Data
+| Fitur | Status | Dukungan |
+| :--- | :---: | ---: |
+| Split Screen | ✅ Aktif | Semua Device |
+| Export File | ✅ Aktif | MD & HTML |
+| Dark Mode | ✅ Aktif | Auto-Detect |
+
+---
+
+*Mulai mengetik di panel sebelah kiri untuk melihat keajaibannya!*`;
+
+        // DOM Element Selectors
+        const markdownInput = document.getElementById('markdown-input');
+        const markdownPreview = document.getElementById('markdown-preview');
+        const lineNumbers = document.getElementById('line-numbers');
+        const docTitle = document.getElementById('doc-title');
+        const wordCountEl = document.getElementById('word-count');
+        const charCountEl = document.getElementById('char-count');
+        const readTimeEl = document.getElementById('read-time');
+        const autosaveStatus = document.getElementById('autosave-status');
+        const btnTheme = document.getElementById('btn-theme');
+        const iconMoon = document.getElementById('icon-moon');
+        const iconSun = document.getElementById('icon-sun');
+        const btnFocus = document.getElementById('btn-focus');
+        const panelEditor = document.getElementById('panel-editor');
+        const panelPreview = document.getElementById('panel-preview');
+        const viewSplit = document.getElementById('view-split');
+        const viewEditor = document.getElementById('view-editor');
+        const viewPreview = document.getElementById('view-preview');
+        const toast = document.getElementById('toast');
+        const toastMessage = document.getElementById('toast-message');
+
+        // Configure Marked library settings
+        marked.setOptions({
+            gfm: true,
+            breaks: true,
+            highlight: function(code, lang) {
+                const language = hljs.getLanguage(lang) ? lang : 'plaintext';
+                return hljs.highlight(code, { language }).value;
+            }
+        });
+
+        // App Initialization
+        window.onload = () => {
+            // Load saved content or sample content
+            const savedContent = localStorage.getItem('md_studio_content');
+            const savedTitle = localStorage.getItem('md_studio_title');
+            const savedTheme = localStorage.getItem('md_studio_theme');
+
+            if (savedContent !== null) {
+                markdownInput.value = savedContent;
+            } else {
+                markdownInput.value = SAMPLE_MARKDOWN;
+            }
+
+            if (savedTitle) {
+                docTitle.value = savedTitle;
+            }
+
+            // Theme Init
+            if (savedTheme === 'light') {
+                enableLightTheme();
+            } else {
+                enableDarkTheme();
+            }
+
+            updateRender();
+            syncScroll();
+        };
+
+        // Render Markdown & Metadata Update
+        function updateRender() {
+            const content = markdownInput.value;
+            
+            // Render HTML
+            markdownPreview.innerHTML = marked.parse(content);
+            
+            // Re-apply syntax highlighting for code blocks
+            document.querySelectorAll('pre code').forEach((block) => {
+                hljs.highlightElement(block);
+            });
+
+            // Update Line Numbers
+            updateLineNumbers(content);
+
+            // Update Statistics
+            updateStats(content);
+
+            // Trigger Auto-save
+            triggerAutoSave(content);
+        }
+
+        // Line Numbers Calculation
+        function updateLineNumbers(text) {
+            const lines = text.split('\n').length;
+            let linesArr = [];
+            for (let i = 1; i <= lines; i++) {
+                linesArr.push(i);
+            }
+            lineNumbers.innerHTML = linesArr.join('<br>');
+        }
+
+        // Statistics (Words, Chars, Read Time)
+        function updateStats(text) {
+            const cleanText = text.trim();
+            const words = cleanText ? cleanText.split(/\s+/).length : 0;
+            const chars = text.length;
+            const readTime = Math.ceil(words / 200); // Avg 200 words per minute
+
+            wordCountEl.textContent = words.toLocaleString();
+            charCountEl.textContent = chars.toLocaleString();
+            readTimeEl.textContent = `${readTime} min`;
+        }
+
+        // Auto Save to LocalStorage with Debounce
+        let saveTimeout;
+        function triggerAutoSave(content) {
+            clearTimeout(saveTimeout);
+            autosaveStatus.classList.add('opacity-50');
+            
+            saveTimeout = setTimeout(() => {
+                localStorage.setItem('md_studio_content', content);
+                localStorage.setItem('md_studio_title', docTitle.value);
+                autosaveStatus.classList.remove('opacity-50');
+            }, 600);
+        }
+
+        // Toast Notification Trigger
+        function showToast(msg) {
+            toastMessage.textContent = msg;
+            toast.classList.remove('translate-y-20', 'opacity-0');
+            setTimeout(() => {
+                toast.classList.add('translate-y-20', 'opacity-0');
+            }, 3000);
+        }
+
+        // Event Listeners for Live Preview & Syncing
+        markdownInput.addEventListener('input', updateRender);
+        docTitle.addEventListener('input', () => {
+            localStorage.setItem('md_studio_title', docTitle.value);
+        });
+
+        // Synchronize Scroll between Textarea and Line Numbers
+        markdownInput.addEventListener('scroll', () => {
+            lineNumbers.scrollTop = markdownInput.scrollTop;
+        });
+
+        // Theme Toggle Handler
+        function enableLightTheme() {
+            document.documentElement.classList.remove('dark');
+            document.documentElement.classList.add('light');
+            document.body.classList.remove('bg-slate-900', 'text-slate-100');
+            document.body.classList.add('bg-slate-50', 'text-slate-800');
+            iconMoon.classList.add('hidden');
+            iconSun.classList.remove('hidden');
+            document.getElementById('hljs-theme').href = 'https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css';
+            localStorage.setItem('md_studio_theme', 'light');
+        }
+
+        function enableDarkTheme() {
+            document.documentElement.classList.remove('light');
+            document.documentElement.classList.add('dark');
+            document.body.classList.remove('bg-slate-50', 'text-slate-800');
+            document.body.classList.add('bg-slate-900', 'text-slate-100');
+            iconSun.classList.add('hidden');
+            iconMoon.classList.remove('hidden');
+            document.getElementById('hljs-theme').href = 'https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css';
+            localStorage.setItem('md_studio_theme', 'dark');
+        }
+
+        btnTheme.addEventListener('click', () => {
+            if (document.documentElement.classList.contains('dark')) {
+                enableLightTheme();
+            } else {
+                enableDarkTheme();
+            }
+        });
+
+        // Focus Mode Handler
+        let isFocusMode = false;
+        btnFocus.addEventListener('click', () => {
+            isFocusMode = !isFocusMode;
+            const header = document.getElementById('main-header');
+            const toolbar = document.getElementById('formatting-toolbar');
+
+            if (isFocusMode) {
+                header.classList.add('-mt-14');
+                toolbar.classList.add('hidden');
+                showToast('Mode Fokus Aktif (Klik icon fullscreen lagi untuk keluar)');
+            } else {
+                header.classList.remove('-mt-14');
+                toolbar.classList.remove('hidden');
+            }
+        });
+
+        // View Mode Switcher (Split, Editor Only, Preview Only)
+        function setViewMode(mode) {
+            viewSplit.className = "px-2 py-0.5 rounded text-[11px] font-medium text-slate-400 hover:text-slate-200 transition";
+            viewEditor.className = "px-2 py-0.5 rounded text-[11px] font-medium text-slate-400 hover:text-slate-200 transition";
+            viewPreview.className = "px-2 py-0.5 rounded text-[11px] font-medium text-slate-400 hover:text-slate-200 transition";
+
+            if (mode === 'split') {
+                panelEditor.classList.remove('hidden', 'w-full');
+                panelEditor.classList.add('w-1/2');
+                panelPreview.classList.remove('hidden', 'w-full');
+                panelPreview.classList.add('w-1/2');
+                viewSplit.className = "px-2 py-0.5 rounded text-[11px] font-medium bg-brand-600 text-white transition";
+            } else if (mode === 'editor') {
+                panelEditor.classList.remove('hidden', 'w-1/2');
+                panelEditor.classList.add('w-full');
+                panelPreview.classList.add('hidden');
+                viewEditor.className = "px-2 py-0.5 rounded text-[11px] font-medium bg-brand-600 text-white transition";
+            } else if (mode === 'preview') {
+                panelEditor.classList.add('hidden');
+                panelPreview.classList.remove('hidden', 'w-1/2');
+                panelPreview.classList.add('w-full');
+                viewPreview.className = "px-2 py-0.5 rounded text-[11px] font-medium bg-brand-600 text-white transition";
+            }
+        }
+
+        viewSplit.addEventListener('click', () => setViewMode('split'));
+        viewEditor.addEventListener('click', () => setViewMode('editor'));
+        viewPreview.addEventListener('click', () => setViewMode('preview'));
+
+        // Formatting Toolbar Actions Handler
+        const toolbarButtons = document.querySelectorAll('[data-format]');
+        toolbarButtons.forEach(button => {
+            button.addEventListener('click', () => {
+                const format = button.getAttribute('data-format');
+                insertFormat(format);
+            });
+        });
+
+        function insertFormat(format) {
+            const start = markdownInput.selectionStart;
+            const end = markdownInput.selectionEnd;
+            const text = markdownInput.value;
+            const selectedText = text.substring(start, end);
+
+            let replacement = '';
+            let cursorOffset = 0;
+
+            switch (format) {
+                case 'bold':
+                    replacement = `**${selectedText || 'teks tebal'}**`;
+                    cursorOffset = 2;
+                    break;
+                case 'italic':
+                    replacement = `*${selectedText || 'teks miring'}*`;
+                    cursorOffset = 1;
+                    break;
+                case 'strikethrough':
+                    replacement = `~~${selectedText || 'teks coret'}~~`;
+                    cursorOffset = 2;
+                    break;
+                case 'h1':
+                    replacement = `# ${selectedText || 'Judul 1'}`;
+                    cursorOffset = 2;
+                    break;
+                case 'h2':
+                    replacement = `## ${selectedText || 'Judul 2'}`;
+                    cursorOffset = 3;
+                    break;
+                case 'h3':
+                    replacement = `### ${selectedText || 'Judul 3'}`;
+                    cursorOffset = 4;
+                    break;
+                case 'ul':
+                    replacement = `- ${selectedText || 'Item daftar'}`;
+                    cursorOffset = 2;
+                    break;
+                case 'ol':
+                    replacement = `1. ${selectedText || 'Item daftar'}`;
+                    cursorOffset = 3;
+                    break;
+                case 'task':
+                    replacement = `- [ ] ${selectedText || 'Tugas baru'}`;
+                    cursorOffset = 6;
+                    break;
+                case 'quote':
+                    replacement = `> ${selectedText || 'Kutipan teks'}`;
+                    cursorOffset = 2;
+                    break;
+                case 'code':
+                    replacement = `\`\`\`javascript\n${selectedText || '// Tulis kode di sini'}\n\`\`\``;
+                    cursorOffset = 3;
+                    break;
+                case 'link':
+                    replacement = `[${selectedText || 'Teks Tautan'}](https://example.com)`;
+                    cursorOffset = 1;
+                    break;
+                case 'table':
+                    replacement = `\n| Kolom 1 | Kolom 2 |\n| --- | --- |\n| Data 1 | Data 2 |\n`;
+                    cursorOffset = 2;
+                    break;
+                case 'hr':
+                    replacement = `\n---\n`;
+                    cursorOffset = 5;
+                    break;
+            }
+
+            markdownInput.value = text.substring(0, start) + replacement + text.substring(end);
+            markdownInput.focus();
+            markdownInput.setSelectionRange(start + cursorOffset, start + cursorOffset + (selectedText.length || 0));
+            updateRender();
+        }
+
+        // Keyboard Shortcuts Support (Ctrl+B, Ctrl+I)
+        markdownInput.addEventListener('keydown', (e) => {
+            if (e.ctrlKey || e.metaKey) {
+                if (e.key === 'b' || e.key === 'B') {
+                    e.preventDefault();
+                    insertFormat('bold');
+                } else if (e.key === 'i' || e.key === 'I') {
+                    e.preventDefault();
+                    insertFormat('italic');
+                }
+            }
+        });
+
+        // Copy Raw Markdown
+        document.getElementById('btn-copy-md').addEventListener('click', () => {
+            const tempArea = document.createElement('textarea');
+            tempArea.value = markdownInput.value;
+            document.body.appendChild(tempArea);
+            tempArea.select();
+            document.execCommand('copy');
+            document.body.removeChild(tempArea);
+            showToast('Kode Markdown berhasil disalin!');
+        });
+
+        // Copy Formatted HTML
+        document.getElementById('btn-copy-html').addEventListener('click', () => {
+            const tempArea = document.createElement('textarea');
+            tempArea.value = markdownPreview.innerHTML;
+            document.body.appendChild(tempArea);
+            tempArea.select();
+            document.execCommand('copy');
+            document.body.removeChild(tempArea);
+            showToast('Hasil HTML berhasil disalin!');
+        });
+
+        // Export as .md File
+        document.getElementById('btn-export-md').addEventListener('click', () => {
+            const blob = new Blob([markdownInput.value], { type: 'text/markdown;charset=utf-8;' });
+            const link = document.createElement('a');
+            const filename = docTitle.value.endsWith('.md') ? docTitle.value : `${docTitle.value}.md`;
+            link.href = URL.createObjectURL(blob);
+            link.download = filename;
+            link.click();
+            showToast(`File ${filename} berhasil diunduh!`);
+        });
+
+        // Export as Styled Standalone HTML File
+        document.getElementById('btn-export-html').addEventListener('click', () => {
+            const isDark = document.documentElement.classList.contains('dark');
+            const fullHtmlContent = `<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>${docTitle.value.replace('.md', '')}</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/${isDark ? 'github-dark' : 'github'}.min.css">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            line-height: 1.7;
+            background-color: ${isDark ? '#0f172a' : '#ffffff'};
+            color: ${isDark ? '#f8fafc' : '#1e293b'};
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 2rem 1rem;
+        }
+        h1, h2, h3, h4 { color: inherit; font-weight: 700; }
+        h1 { border-bottom: 1px solid rgba(156,163,175,0.3); padding-bottom: 0.3em; }
+        h2 { border-bottom: 1px solid rgba(156,163,175,0.2); padding-bottom: 0.2em; }
+        code { font-family: 'Fira Code', monospace; background: rgba(156,163,175,0.15); padding: 0.2em 0.4em; border-radius: 4px; }
+        pre code { background: transparent; padding: 0; }
+        pre { background: ${isDark ? '#0d1117' : '#f6f8fa'}; padding: 1em; border-radius: 8px; overflow-x: auto; }
+        blockquote { border-left: 4px solid #0284c7; padding-left: 1em; margin: 1em 0; font-style: italic; opacity: 0.9; }
+        table { width: 100%; border-collapse: collapse; margin: 1em 0; }
+        th, td { border: 1px solid rgba(156,163,175,0.3); padding: 0.6em 1em; }
+        th { background: rgba(156,163,175,0.1); }
+        a { color: #0284c7; }
+    </style>
+</head>
+<body>
+    ${markdownPreview.innerHTML}
+</body>
+</html>`;
+
+            const blob = new Blob([fullHtmlContent], { type: 'text/html;charset=utf-8;' });
+            const link = document.createElement('a');
+            const filename = `${docTitle.value.replace('.md', '')}.html`;
+            link.href = URL.createObjectURL(blob);
+            link.download = filename;
+            link.click();
+            showToast(`File ${filename} berhasil diunduh!`);
+        });
+    </script>
+</body>
+</html>
